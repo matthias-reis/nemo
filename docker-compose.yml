@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /srv/volumes/traefik/letsencrypt:/letsencrypt
+      - ./docker/traefik/traefik.yml:/traefik.yml:ro
+      - ./docker/traefik/dynamic.yml:/dynamic.yml:ro
+    labels:
+      - "traefik.enable=true"
+
+      # Dashboard on HTTPS at traefik domain
+      - "traefik.http.routers.api.rule=Host(`${TRAEFIK_DOMAIN_TRAEFIK}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.api.service=api@internal"
+
+      # Basic auth for dashboard
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}:${TRAEFIK_DASHBOARD_PASS_HASH}"
+      - "traefik.http.routers.api.middlewares=auth,secure-headers@file"
+
+      # Optional HTTP -> HTTPS redirect for the dashboard host
+      - "traefik.http.routers.api-http.rule=Host(`${TRAEFIK_DOMAIN_TRAEFIK}`)"
+      - "traefik.http.routers.api-http.entrypoints=web"
+      - "traefik.http.routers.api-http.middlewares=redirect-to-https@file"
+
+networks:
+  default:
+    name: web

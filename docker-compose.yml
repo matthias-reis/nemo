@@ -135,7 +135,7 @@ services:
       - /srv/volumes/nextcloud/data:/var/www/html/data
 
   matomo:
-    image: matomo:latest-apache
+    image: matomo:apache
     restart: unless-stopped
     depends_on:
       mariadb:
@@ -162,14 +162,17 @@ services:
       - "traefik.http.routers.matomo-http.middlewares=redirect-to-https@file"
 
   matomo-cron:
-    image: matomo:latest-apache
+    image: matomo:apache
     restart: unless-stopped
     depends_on:
       - matomo
-    entrypoint: >
-      bash -lc "echo '*/5 * * * * www-data php /var/www/html/console
-      core:archive --url=https://${MATOMO_DOMAIN} --concurrent-archivers=1' |
-      crontab -u www-data - && crond -f"
+    entrypoint:
+      [
+        "/bin/bash",
+        "-lc",
+        "while true; do sudo -u www-data php /var/www/html/console core:archive
+        --url=https://${MATOMO_DOMAIN} --concurrent-archivers=1; sleep 300; done",
+      ]
     volumes:
       - /srv/volumes/matomo/html:/var/www/html
 networks:

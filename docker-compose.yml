@@ -120,7 +120,8 @@ services:
       # well-known redirects for caldav/carddav
       - "traefik.http.middlewares.nc-redirect.redirectregex.regex=^https?://(.*)/.well-known/(card|cal)dav"
       - "traefik.http.middlewares.nc-redirect.redirectregex.replacement=https://$${1}/remote.php/dav/"
-      - "traefik.http.routers.nextcloud.middlewares=nc-redirect,secure-headers@file"
+      - "traefik.http.middlewares.nc-headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.routers.nextcloud.middlewares=nc-redirect,secure-headers@file,nc-headers@docker"
       # HTTP → HTTPS
       - "traefik.http.routers.nextcloud-http.rule=Host(`${NEXTCLOUD_DOMAIN}`)"
       - "traefik.http.routers.nextcloud-http.entrypoints=web"
